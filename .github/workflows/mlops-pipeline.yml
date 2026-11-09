@@ -120,7 +120,7 @@ jobs:
       - name: Start MLflow
         run: |
           docker compose -f deployment/mlflow/docker-compose.yaml up -d
-          curl --fail --retry 20 --retry-connrefused --retry-delay 3 --max-time 5 http://localhost:5555/health
+          curl --fail --retry 20 --retry-all-errors --retry-delay 3 --max-time 5 http://localhost:5555/health
 
       - name: Train model
         run: |
@@ -137,4 +137,6 @@ jobs:
 
       - name: Stop MLflow
         if: always()
-        run: docker compose -f deployment/mlflow/docker-compose.yaml down
+        run: |
+          docker compose -f deployment/mlflow/docker-compose.yaml logs mlflow
+          docker compose -f deployment/mlflow/docker-compose.yaml down
