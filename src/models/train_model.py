@@ -6,7 +6,7 @@ import joblib
 import mlflow
 import mlflow.sklearn
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, r2_score
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, HistGradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 import yaml
@@ -77,7 +77,8 @@ def train_and_evaluate_model(model, X_train, y_train, X_test, y_test):
     metrics = {
         'mae': mae,
         'r2': r2,
-        'rmse': rmse
+        'rmse': rmse,
+        'mape': mean_absolute_percentage_error(y_test, y_pred),
     }
 
     logger.info(f"Model performance - R²: {r2:.4f}, MAE: {mae:.2f}, RMSE: {rmse:.2f}")
@@ -190,6 +191,16 @@ def main():
     trained_model, metrics = train_and_evaluate_model(
         model, X_train, y_train, X_test, y_test
     )
+
+    gate = config['model'].get('quality_gate', {})
+    baseline_mae = mean_absolute_error(y_test, np.full(len(y_test), y_train.median()))
+    logger.info("Quality gate - MAPE: %.2f%%, baseline MAE: %.2f", 100 * metrics['mape'], baseline_mae)
+    if metrics['r2'] < gate.get('min_r2', -np.inf):
+        raise SystemExit("Quality gate failed: R² below min_r2")
+    if metrics['mape'] > gate.get('max_mape', np.inf):
+        raise SystemExit("Quality gate failed: MAPE above max_mape")
+    if gate.get('must_beat_baseline') and metrics['mae'] >= baseline_mae:
+        raise SystemExit("Quality gate failed: MAE did not beat the median baseline")
 
     # Guardar artefactos localmente
     model_path, config_path = save_model_artifacts(
