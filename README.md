@@ -130,6 +130,21 @@ python src/models/train_model.py   --config configs/model_config.yaml   --data d
 its hyperparameters, the RFE features and the `quality_gate` thresholds (minimum R², maximum MAPE, beat the median
 baseline) that the training script must enforce on the fixed holdout.
 
+For the lab comparison, both models used the same 61 training rows, 16 holdout rows,
+15 features and `random_state=42`. RandomForest used 50 trees. GradientBoosting used
+the parameters in `configs/model_config.yaml`, including 200 estimators.
+
+| Model | Holdout R² | MAE (USD) | RMSE (USD) |
+| --- | ---: | ---: | ---: |
+| RandomForest | 0.9635 | 22,867.08 | 41,234.17 |
+| GradientBoosting | 0.9817 | 14,122.07 | 29,227.99 |
+
+The production config keeps GradientBoosting because it had higher R² and lower
+errors in this comparison. The holdout has 16 houses, so the result applies to this split.
+
+For the API contract check, run `python -m pytest -q tests/test_api_contract.py`.
+The test checks that the prediction schema rejects a request missing `sqft`.
+
 ---
 
 ## Building FastAPI and Streamlit

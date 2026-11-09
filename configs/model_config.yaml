@@ -33,7 +33,7 @@ model:
     min_weight_fraction_leaf: 0.0
     n_estimators: 200
     n_iter_no_change: null
-    random_state: null
+    random_state: 42
     subsample: 0.8
     tol: 0.0001
     validation_fraction: 0.1

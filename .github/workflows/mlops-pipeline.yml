@@ -11,6 +11,10 @@ on:
         description: "Demostrar el fallo del contrato con un año de construcción futuro"
         type: boolean
         default: false
+      demo_quality_gate:
+        description: "Demostrar el fallo de Model Training con min_r2=0.99"
+        type: boolean
+        default: false
 
 jobs:
   data-processing:
@@ -121,6 +125,20 @@ jobs:
         run: |
           docker compose -f deployment/mlflow/docker-compose.yaml up -d
           curl --fail --retry 20 --retry-all-errors --retry-delay 3 --max-time 5 http://localhost:5555/health
+
+      - name: Set stricter R² threshold for demo
+        if: ${{ inputs.demo_quality_gate }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          path = Path("configs/model_config.yaml")
+          config = yaml.safe_load(path.read_text(encoding="utf-8"))
+          config["model"]["quality_gate"]["min_r2"] = 0.99
+          path.write_text(yaml.safe_dump(config), encoding="utf-8")
+          print("Demo: quality_gate.min_r2=0.99")
+          PY
 
       - name: Train model
         run: |

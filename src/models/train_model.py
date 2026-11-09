@@ -195,8 +195,9 @@ def main():
     gate = config['model'].get('quality_gate', {})
     baseline_mae = mean_absolute_error(y_test, np.full(len(y_test), y_train.median()))
     logger.info("Quality gate - MAPE: %.2f%%, baseline MAE: %.2f", 100 * metrics['mape'], baseline_mae)
-    if metrics['r2'] < gate.get('min_r2', -np.inf):
-        raise SystemExit("Quality gate failed: R² below min_r2")
+    min_r2 = gate.get('min_r2', -np.inf)
+    if metrics['r2'] < min_r2:
+        raise SystemExit(f"Quality gate failed: holdout R² {metrics['r2']:.4f} < min_r2 {min_r2:.4f}")
     if metrics['mape'] > gate.get('max_mape', np.inf):
         raise SystemExit("Quality gate failed: MAPE above max_mape")
     if gate.get('must_beat_baseline') and metrics['mae'] >= baseline_mae:
